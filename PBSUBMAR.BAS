@@ -6,12 +6,6 @@ DEFINT A-Z
 %TICKCOUNTSTEP = 1000
 %TRUE = -1
 
-DIM DEFAULTEXPLOSION AS SHARED STRING
-DIM SUBMARINE AS SHARED STRING
-
-DEFAULTEXPLOSION = "Ü°ÛÛÛÛÜÛ°Ü"
-SUBMARINE = "ÜÜÛÜÜ"
-
 TYPE BombStr
  Dropped AS INTEGER
  x AS INTEGER
@@ -48,24 +42,23 @@ DECLARE SUB Quit ()
 DECLARE SUB TickDelay (DelayTickCount AS DOUBLE)
 
 DIM Bomb AS SHARED BombStr
+DIM DefaultExplosion AS SHARED STRING
 DIM Enemy(0 TO 8) AS SHARED EnemyStr
 DIM DelayTickCount AS SHARED DOUBLE
 DIM LevelBackgroundColor(0 TO 4) AS SHARED INTEGER
 DIM Player AS SHARED PlayerStr
+DIM Submarine AS SHARED STRING
 
 CALL Main
 
 SUB AskTryAgain ()
-DIM KeyStroke AS STRING
-
- PRINT "  Try again (Y/N)?";
  DO
-  KeyStroke = UCASE$(INPUT$(1))
-  SELECT CASE KeyStroke
+  PRINT "  Try again (Y/N)?";
+  SELECT CASE UCASE$(INPUT$(1))
    CASE "N"
     Quit
    CASE "Y"
-    Player.LevelFinished = -1
+    Player.LevelFinished = TRUE
     Initialize
     DisplayStartScreen
     EXIT DO
@@ -79,11 +72,11 @@ DIM EnemyIndex AS LOCAL INTEGER
  FOR EnemyIndex = 0 TO Player.Level + 4
   Enemy(EnemyIndex).x = INT(RND * 20) + 3
   Enemy(EnemyIndex).y = INT(RND * 79) + 1
-  IF Enemy(EnemyIndex).y + LEN(SUBMARINE) > 79 THEN Enemy(EnemyIndex).y = 79 - LEN(SUBMARINE)
-  
+  IF Enemy(EnemyIndex).y + LEN(Submarine) > 79 THEN Enemy(EnemyIndex).y = 79 - LEN(Submarine)
+
   COLOR 4
   LOCATE Enemy(EnemyIndex).x, Enemy(EnemyIndex).y
-  PRINT SUBMARINE$;
+  PRINT Submarine$;
   Enemy(EnemyIndex).Disabled = %FALSE
  NEXT EnemyIndex
 END SUB
@@ -91,19 +84,18 @@ END SUB
 SUB DisableEnemy (EnemyIndex AS INTEGER)
 DIM Explosion AS LOCAL STRING
 DIM Flash AS LOCAL INTEGER
-DIM KeyStroke AS LOCAL STRING
 DIM x AS LOCAL INTEGER
 
  IF NOT Enemy(EnemyIndex).Disabled THEN
   IF Bomb.y < 4 THEN
    LOCATE Bomb.x, Bomb.y
-   Explosion = MID$(DEFAULTEXPLOSION$, Bomb.y)
+   Explosion = MID$(DefaultExplosion$, Bomb.y)
   ELSEIF Bomb.y > 75 THEN
    LOCATE Bomb.x, Bomb.y - 3
-   Explosion = MID$(DEFAULTEXPLOSION$, 1, LEN(DEFAULTEXPLOSION$) - (80 - Bomb.y))
+   Explosion = MID$(DefaultExplosion$, 1, LEN(DefaultExplosion$) - (80 - Bomb.y))
   ELSE
    LOCATE Bomb.x, Bomb.y - 3
-   Explosion = DEFAULTEXPLOSION$
+   Explosion = DefaultExplosion$
   END IF
 
   COLOR 14
@@ -119,13 +111,12 @@ DIM x AS LOCAL INTEGER
    PALETTE 0, LevelBackgroundColor(Player.Level)
   NEXT Flash
 
-  SLEEP 1
-  KeyStroke = INKEY$
+  DELAY 1
 
   LOCATE Bomb.x, Bomb.y - 3
   PRINT SPC(LEN(Explosion));
 
-  Player.Score = Player.Score + Enemy(EnemyIndex).x
+  INCR Player.Score, Enemy(EnemyIndex).x
   COLOR 2
   LOCATE 1, 1
   PRINT USING "Score: ###"; Player.Score;
@@ -138,16 +129,16 @@ DIM x AS LOCAL INTEGER
    PRINT "  o  ";
    COLOR 4
    LOCATE x + 1, Enemy(EnemyIndex).y
-   PRINT SUBMARINE$;
+   PRINT Submarine$;
    TickDelay DelayTickCount
   NEXT x
 
   FOR x = Enemy(EnemyIndex).x TO 22
    LOCATE x, Enemy(EnemyIndex).y
-   PRINT SPC(LEN(SUBMARINE$));
+   PRINT SPC(LEN(Submarine$));
   NEXT x
 
-  Player.HitCount = Player.HitCount + 1
+  INCR Player.HitCount
  END IF
 END SUB
 
@@ -188,7 +179,7 @@ SUB DropBomb ()
  IF Bomb.x = 22 THEN
   Bomb.Dropped = %FALSE
  ELSE
-  Bomb.x = Bomb.x + 1
+  INCR Bomb.x
   COLOR 8
   LOCATE Bomb.x, Bomb.y
   PRINT "o";
@@ -202,7 +193,7 @@ DIM EnemyIndex AS LOCAL INTEGER
   DisplayYouHaveWon
   AskTryAgain
  ELSE
-  Player.Level = Player.Level + 1
+  INCR Player.Level
  END IF
 
  FOR EnemyIndex = 0 TO Player.Level + 4
@@ -211,7 +202,7 @@ DIM EnemyIndex AS LOCAL INTEGER
 
  Player.BombCount = 25
  Player.HitCount = 0
- Player.LevelFinished = -1
+ Player.LevelFinished = TRUE
 END SUB
 
 SUB Initialize ()
@@ -225,24 +216,22 @@ SUB Initialize ()
  ERASE Enemy
  ERASE LevelBackgroundColor
 
+ DefaultExplosion = "Ü°ÛÛÛÛÜÛ°Ü"
  DelayTickCount = %DEFAULTTICKCOUNT
-
  Player.BombCount = 25
  Player.HitCount = 0
  Player.Level = 0
  Player.Score = 0
  Player.x = 1
-
  LevelBackgroundColor(0) = &H19
  LevelBackgroundColor(1) = &H9
  LevelBackgroundColor(2) = &H11
  LevelBackgroundColor(3) = &H1
  LevelBackgroundColor(4) = &H8
+ Submarine = "ÜÜÛÜÜ"
 END SUB
 
 SUB Main ()
-DIM KeyStroke AS STRING
-
  Initialize
  DisplayStartScreen
 
@@ -256,7 +245,6 @@ DIM KeyStroke AS STRING
    LOCATE 1, 1
    PRINT USING "Score: ###   Bombs: ####    Level: #"; Player.Score; Player.BombCount; Player.Level + 1
    DO
-    KeyStroke = INKEY$
     MoveSubmarines
     IF Bomb.Dropped THEN
      DropBomb
@@ -264,24 +252,24 @@ DIM KeyStroke AS STRING
      DisplayYouHaveLost
      AskTryAgain
     END IF
-   LOOP WHILE (KeyStroke = "") AND (NOT Player.LevelFinished)
-   SELECT CASE KeyStroke
+   LOOP UNTIL INSTAT OR Player.LevelFinished
+   SELECT CASE INKEY$
     CASE CHR$(27)
      Quit
     CASE " "
      IF NOT Bomb.Dropped THEN
       Bomb.x = 3
       Bomb.y = Player.x
-      Player.BombCount = Player.BombCount - 1
+      DECR Player.BombCount
       Bomb.Dropped = %TRUE
      END IF
     CASE "+"
-     IF DelayTickCount - %TICKCOUNTSTEP > 0 THEN DelayTickCount = DelayTickCount - %TICKCOUNTSTEP
+     IF DelayTickCount - %TICKCOUNTSTEP > 0 THEN DECR DelayTickCount, %TICKCOUNTSTEP
     CASE "-"
-     IF DelayTickCount + %TICKCOUNTSTEP < 2147483647 THEN DelayTickCount = DelayTickCount + %TICKCOUNTSTEP
+     IF DelayTickCount + %TICKCOUNTSTEP < 2147483647 THEN INCR DelayTickCount, %TICKCOUNTSTEP
    END SELECT
   LOOP UNTIL Player.LevelFinished
-  Player.LevelFinished = 0
+  Player.LevelFinished = FALSE
  LOOP
 END SUB
 
@@ -289,13 +277,13 @@ SUB MoveSubmarines ()
 DIM EnemyIndex AS SHARED INTEGER
 
  LOCATE 2, Player.x
- IF Player.x + LEN(SUBMARINE$) > 79 THEN
-  PRINT SPC(LEN(SUBMARINE$));
+ IF Player.x + LEN(Submarine$) > 79 THEN
+  PRINT SPC(LEN(Submarine$));
   Player.x = 1
  ELSE
   COLOR 7
-  PRINT " "; SUBMARINE$;
-  Player.x = Player.x + 1
+  PRINT " "; Submarine$;
+  INCR Player.x
  END IF
 
  FOR EnemyIndex = 0 TO Player.Level + 4
@@ -312,12 +300,12 @@ DIM EnemyIndex AS SHARED INTEGER
   IF NOT Enemy(EnemyIndex).Disabled THEN
    LOCATE Enemy(EnemyIndex).x, Enemy(EnemyIndex).y
    IF Enemy(EnemyIndex).y = 1 THEN
-    PRINT SPC(LEN(SUBMARINE$) + 1);
-    Enemy(EnemyIndex).y = 79 - LEN(SUBMARINE$)
+    PRINT SPC(LEN(Submarine$) + 1);
+    Enemy(EnemyIndex).y = 79 - LEN(Submarine$)
    ELSE
     COLOR 4
-    PRINT SUBMARINE$; " ";
-    Enemy(EnemyIndex).y = Enemy(EnemyIndex).y - 1
+    PRINT Submarine$; " ";
+    DECR Enemy(EnemyIndex).y
    END IF
   END IF
  NEXT EnemyIndex
