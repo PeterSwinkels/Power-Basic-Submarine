@@ -43,8 +43,8 @@ DECLARE SUB TickDelay (DelayTickCount AS DOUBLE)
 
 DIM Bomb AS SHARED BombStr
 DIM DefaultExplosion AS SHARED STRING
-DIM Enemy(0 TO 8) AS SHARED EnemyStr
 DIM DelayTickCount AS SHARED DOUBLE
+DIM Enemy(0 TO 8) AS SHARED EnemyStr
 DIM LevelBackgroundColor(0 TO 4) AS SHARED INTEGER
 DIM Player AS SHARED PlayerStr
 DIM Submarine AS SHARED STRING
@@ -58,7 +58,7 @@ SUB AskTryAgain ()
    CASE "N"
     Quit
    CASE "Y"
-    Player.LevelFinished = TRUE
+    Player.LevelFinished = %TRUE
     Initialize
     DisplayStartScreen
     EXIT DO
@@ -73,10 +73,6 @@ DIM EnemyIndex AS LOCAL INTEGER
   Enemy(EnemyIndex).x = INT(RND * 20) + 3
   Enemy(EnemyIndex).y = INT(RND * 79) + 1
   IF Enemy(EnemyIndex).y + LEN(Submarine) > 79 THEN Enemy(EnemyIndex).y = 79 - LEN(Submarine)
-
-  COLOR 4
-  LOCATE Enemy(EnemyIndex).x, Enemy(EnemyIndex).y
-  PRINT Submarine$;
   Enemy(EnemyIndex).Disabled = %FALSE
  NEXT EnemyIndex
 END SUB
@@ -202,7 +198,7 @@ DIM EnemyIndex AS LOCAL INTEGER
 
  Player.BombCount = 25
  Player.HitCount = 0
- Player.LevelFinished = TRUE
+ Player.LevelFinished = %TRUE
 END SUB
 
 SUB Initialize ()
@@ -269,7 +265,7 @@ SUB Main ()
      IF DelayTickCount + %TICKCOUNTSTEP < 2147483647 THEN INCR DelayTickCount, %TICKCOUNTSTEP
    END SELECT
   LOOP UNTIL Player.LevelFinished
-  Player.LevelFinished = FALSE
+  Player.LevelFinished = %FALSE
  LOOP
 END SUB
 
