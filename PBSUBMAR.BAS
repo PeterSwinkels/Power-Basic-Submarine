@@ -31,6 +31,7 @@ DECLARE SUB AskTryAgain ()
 DECLARE SUB CreateSubmarines ()
 DECLARE SUB DisableEnemy (Enemy)
 DECLARE SUB DisplayStartScreen ()
+DECLARE SUB DisplayStatus ()
 DECLARE SUB DisplayYouHaveLost ()
 DECLARE SUB DisplayYouHaveWon ()
 DECLARE SUB DropBomb ()
@@ -44,7 +45,7 @@ DECLARE SUB TickDelay (DelayTickCount AS DOUBLE)
 DIM Bomb AS SHARED BombStr
 DIM DefaultExplosion AS SHARED STRING
 DIM DelayTickCount AS SHARED DOUBLE
-DIM Enemy(0 TO 8) AS SHARED EnemyStr
+DIM Enemy(0 TO 0) AS SHARED EnemyStr
 DIM LevelBackgroundColor(0 TO 4) AS SHARED INTEGER
 DIM Player AS SHARED PlayerStr
 DIM Submarine AS SHARED STRING
@@ -69,7 +70,9 @@ END SUB
 SUB CreateSubmarines ()
 DIM EnemyIndex AS LOCAL INTEGER
 
- FOR EnemyIndex = 0 TO Player.Level + 4
+ REDIM Enemy(0 to Player.Level + 4) AS EnemyStr
+
+ FOR EnemyIndex = LBOUND(Enemy) TO UBOUND(Enemy)
   Enemy(EnemyIndex).x = INT(RND * 20) + 3
   Enemy(EnemyIndex).y = INT(RND * 79) + 1
   IF Enemy(EnemyIndex).y + LEN(Submarine) > 79 THEN Enemy(EnemyIndex).y = 79 - LEN(Submarine)
@@ -107,15 +110,14 @@ DIM x AS LOCAL INTEGER
    PALETTE 0, LevelBackgroundColor(Player.Level)
   NEXT Flash
 
+  DisplayStatus
+
   DELAY 1
 
   LOCATE Bomb.x, Bomb.y - 3
   PRINT SPC(LEN(Explosion));
 
   INCR Player.Score, Enemy(EnemyIndex).x
-  COLOR 2
-  LOCATE 1, 1
-  PRINT USING "Score: ###"; Player.Score;
   Bomb.Dropped = %FALSE
   Enemy(EnemyIndex).Disabled = %TRUE
 
@@ -149,6 +151,12 @@ SUB DisplayStartScreen ()
  PRINT " Escape = quit"
 
  DO: LOOP WHILE INKEY$ = ""
+END SUB
+
+SUB DisplayStatus ()
+ COLOR 2
+ LOCATE 1, 1
+ PRINT USING "Score: ###   Bombs: ####    Level: #"; Player.Score; Player.BombCount; Player.Level + 1
 END SUB
 
 SUB DisplayYouHaveLost ()
@@ -192,7 +200,7 @@ DIM EnemyIndex AS LOCAL INTEGER
   INCR Player.Level
  END IF
 
- FOR EnemyIndex = 0 TO Player.Level + 4
+ FOR EnemyIndex = LBOUND(Enemy) TO UBOUND(Enemy)
   Enemy(EnemyIndex).Disabled = %FALSE
  NEXT EnemyIndex
 
@@ -203,6 +211,7 @@ END SUB
 
 SUB Initialize ()
  RANDOMIZE TIMER
+ PALETTE
  SCREEN 0
  WIDTH 80, 25
  COLOR 7, 0
@@ -237,9 +246,7 @@ SUB Main ()
   CreateSubmarines
 
   DO
-   COLOR 2
-   LOCATE 1, 1
-   PRINT USING "Score: ###   Bombs: ####    Level: #"; Player.Score; Player.BombCount; Player.Level + 1
+   DisplayStatus
    DO
     MoveSubmarines
     IF Bomb.Dropped THEN
@@ -282,7 +289,7 @@ DIM EnemyIndex AS SHARED INTEGER
   INCR Player.x
  END IF
 
- FOR EnemyIndex = 0 TO Player.Level + 4
+ FOR EnemyIndex = LBOUND(Enemy) TO UBOUND(Enemy)
   IF Bomb.Dropped THEN
    IF Bomb.x = Enemy(EnemyIndex).x AND Bomb.y >= Enemy(EnemyIndex).y AND Bomb.y <= Enemy(EnemyIndex).y + 5 THEN
     DisableEnemy EnemyIndex
