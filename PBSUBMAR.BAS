@@ -114,7 +114,8 @@ DIM x AS LOCAL INTEGER
 
   DELAY 1
 
-  LOCATE Bomb.x, Bomb.y - 3
+  LOCATE Bomb.x
+  IF Bomb.y <= 3 THEN LOCATE , 1 ELSE LOCATE , Bomb.y - 3
   PRINT SPC(LEN(Explosion));
 
   INCR Player.Score, Enemy(EnemyIndex).x
@@ -211,8 +212,8 @@ END SUB
 
 SUB Initialize ()
  RANDOMIZE TIMER
- PALETTE
  SCREEN 0
+ PALETTE
  WIDTH 80, 25
  COLOR 7, 0
  CLS
@@ -293,11 +294,6 @@ DIM EnemyIndex AS SHARED INTEGER
   IF Bomb.Dropped THEN
    IF Bomb.x = Enemy(EnemyIndex).x AND Bomb.y >= Enemy(EnemyIndex).y AND Bomb.y <= Enemy(EnemyIndex).y + 5 THEN
     DisableEnemy EnemyIndex
-    IF Player.HitCount = Player.Level + 5 THEN
-     Player.HitCount = 0
-     GoToNextLevel
-     EXIT SUB
-    END IF
    END IF
   END IF
   IF NOT Enemy(EnemyIndex).Disabled THEN
@@ -313,12 +309,17 @@ DIM EnemyIndex AS SHARED INTEGER
   END IF
  NEXT EnemyIndex
 
+ IF Player.HitCount = UBOUND(Enemy) + 1 THEN
+  Player.HitCount = 0
+  GoToNextLevel
+ END IF
+
  TickDelay DelayTickCount
 END SUB
 
 SUB Quit ()
- PALETTE
  SCREEN 0
+ PALETTE
  WIDTH 80, 25
  COLOR 7, 0
  CLS
